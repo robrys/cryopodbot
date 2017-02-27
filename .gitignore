@@ -1,3 +1,4 @@
 praw.ini
 .*.swp
 creds.py
+pw_bot.py
