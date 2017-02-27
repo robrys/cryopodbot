@@ -123,13 +123,13 @@ def process_subscription_messages(reddit):
     overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
 
 def is_bot_tagged(comment):
-    return "/u/cryopodbot" in comment.body.lower().encode("utf-8").strip()
+    return "/u/cryopodbot" in unicode(comment.body).lower().strip()
 
 def is_post_about(keyword, comment):
-    return keyword in comment.body.lower().encode("utf-8")
+    return keyword in unicode(comment.body).lower()
 
 def is_author(username, comment):
-    return comment.author.lower().encode("utf-8") == username
+    return unicode(comment.author).lower() == username
 
 def process_tagged_comments(reddit):
     subreddit = reddit.get_subreddit("thecryopodtohell")
