@@ -168,16 +168,16 @@ def unique_file_lines(file_name):
     return unique_contents
 
 def is_unsubscribe_request(message):
-    return "unsubscribe" in message.body.lower().encode("utf-8")
+    return "unsubscribe" in unicode(message.body).lower()
 
 def is_subscribe_request(message):
-    return "subscribe" in message.body.lower().encode("utf-8")
+    return "subscribe" in unicode(message.body).lower()
 
 def is_subscribed(message_author, subscribed_users):
-    return message_author.lower().encode("utf-8").strip() in subscribed_users
+    return unicode(message_author).lower().strip() in subscribed_users
 
 def is_processed_message_id(message_id, processed_message_ids):
-    return message_id.encode("utf-8").strip() in processed_message_ids
+    return unicode(message_id).strip() in processed_message_ids
 
 def overwrite_file(file_name, file_contents):
     file_handle = open(file_name, "w")
@@ -198,15 +198,15 @@ def process_subscription_messages(reddit):
         #       are not added to the processed message id file
         if is_unsubscribe_request(message) and \
            is_subscribed(message.author, subscribed_users):
-                subscribed_users.remove(str(message.author))
-                processed_message_ids.add(str(message.id))
+                subscribed_users.remove(unicode(message.author))
+                processed_message_ids.add(unicode(message.id))
                 message.reply("BOT: You've been unsubscribed!")
 
         elif is_subscribe_request(message) and \
              not is_subscribed(message.author, subscribed_users):
-                print "Adding someone! - " + str(message.author)
-                subscribed_users.add(str(message.author))
-                processed_message_ids.add(str(message.id))
+                print "Adding someone! - " + unicode(message.author)
+                subscribed_users.add(unicode(message.author))
+                processed_message_ids.add(unicode(message.id))
 
     overwrite_file(SUBSCRIPTION_FILE, "\n".join(subscribed_users))
     overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
@@ -229,38 +229,35 @@ def process_tagged_comments(reddit):
     # Loops through every comment in the sub.
     for comment in subcomments:
         if is_bot_tagged(comment) and \
+           not is_author(BOT_USERNAME, comment) and \
            not is_processed_message_id(comment.id, processed_message_ids):
-
-                # Make sure the bot doesn't respond to itself.
-                if is_author(BOT_USERNAME, comment):
-                    continue
 
                 # If it's talking about the post, comment the post.
                 if is_post_about("post", comment):
                     comment.reply(BOT_POST_COMMENT_RESPONSE)
-                    processed_message_ids.add(str(comment.id))
+                    processed_message_ids.add(unicode(comment.id))
 
                 #If the post wants a flair and it's me or Klok:
-                elif is_post_about("flair info", comment):
-                    if is_author(TOM_USERNAME, comment) or \
-                       is_author(KLOK_USERNAME, comment):
-                            #Flair and stop duplicate flairing (would only waste processor time)
-                            flairsubmtoset = reddit.get_submission(submission_id=str(comment.parent_id)[-6:])
-                            flairsubmtoset.set_flair("INFO", "info")
-                            processed_message_ids.add(str(comment.id))
+                elif is_post_about("flair info", comment) and \
+                     (is_author(TOM_USERNAME, comment) or \
+                      is_author(KLOK_USERNAME, comment)):
+                        #Flair and stop duplicate flairing (would only waste processor time)
+                        flairsubmtoset = reddit.get_submission(submission_id=unicode(comment.parent_id)[-6:])
+                        flairsubmtoset.set_flair("INFO", "info")
+                        processed_message_ids.add(unicode(comment.id))
 
-                elif is_post_about("flair question", comment):
-                    if is_author(TOM_USERNAME, comment) or \
-                       is_author(KLOK_USERNAME, comment):
-                            flairsubmtoset = reddit.get_submission(submission_id=str(comment.parent_id)[-6:])
-                            flairsubmtoset.set_flair("QUESTION", "question")
-                            processed_message_ids.add(str(comment.id))
+                elif is_post_about("flair question", comment) and \
+                     (is_author(TOM_USERNAME, comment) or \
+                      is_author(KLOK_USERNAME, comment)):
+                        flairsubmtoset = reddit.get_submission(submission_id=unicode(comment.parent_id)[-6:])
+                        flairsubmtoset.set_flair("QUESTION", "question")
+                        processed_message_ids.add(unicode(comment.id))
 
                 # Every other comment tagging the bot, just say some message
                 else:
                     response = random.choice(BOT_TAGGED_RESPONSES)
                     comment.reply(response)
-                    processed_message_ids.add(str(comment.id))
+                    processed_message_ids.add(unicode(comment.id))
 
     overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
 
