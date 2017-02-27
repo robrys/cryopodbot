@@ -6,6 +6,9 @@ import time
 
 from creds import *
 
+BOT_USERNAME = "cryopodbot"
+TOM_USERNAME = "thomas1672"
+KLOK_USERNAME = "klokinator"
 SUBSCRIPTION_FILE = "subscribed_users.txt"
 PROCESSED_MSG_IDS_FILE = "processed_message_ids.txt"
 
@@ -14,20 +17,22 @@ SUBSCRIBE_LINK = MESSAGE_BOT_LINK + "&subject=Subscribe&message=Subscribe"
 UNSUBSCRIBE_LINK = MESSAGE_BOT_LINK + "&subject=unsubscribe&message=unsubscribe"
 PAYPAL_EMAIL = "Klokinator@yahoo.com"
 PATREON_LINK = "https://www.patreon.com/klokinator"
+FOOTER_MESSAGE = """\
+[Click Here to be PM'd new updates!] (%(sub_link)s)\
+[Click Here to unsubscribe!] (%(unsub_link)s)\n\n\n\
+If you want to donate to Klokinator, send paypal gifts to %(paypal_email)s, \
+but be sure to mark it as a gift or Paypal takes 10%%.\n\n\
+Patreon can also be pledged to [here!] (%(patreon_link)s)\n\n\
+""" % dict(sub_link=SUBSCRIBE_LINK, unsub_link=UNSUBSCRIBE_LINK,
+           paypal_email=PAYPAL_EMAIL, patreon_link=PATREON_LINK)
+
 BOT_POST_COMMENT_RESPONSE = """\
 Hi. I'm a bot, bleep bloop.\n\n\
 If you're about to post regarding a typo and this Part was just posted, \
 please wait ten minutes, refresh, and then see if it's still there!\n\n\
 Also, if you want to report typos anywhere, please respond to this bot to \
 keep the main post clutter free. Thank you!\n\n\n\
-[Click Here to be PM'd new updates!] (%(sub_link)s)\
-[Click Here to unsubscribe!] (%(unsub_link)s)\n\n\n\
-If you want to donate to Klokinator, send paypal gifts to %(paypal_email)s, \
-but be sure to mark it as a gift or Paypal takes 10%%.\n\n\
-Patreon can also be pledged to [here!] (%(patreon_link)s)\
-""" % dict(sub_link=SUBSCRIBE_LINK, unsub_link=UNSUBSCRIBE_LINK,
-           paypal_email=PAYPAL_EMAIL, patreon_link=PATREON_LINK)
-BOT_USERNAME = "cryopodbot"
+""" + FOOTER_MESSAGE
 
 BOT_TAGGED_RESPONSES = [\
     "You called? ;,", "What's up?", "Hey!", "Yo, 'sup?",
@@ -39,8 +44,14 @@ BOT_TAGGED_RESPONSES = [\
     "Now taking suggestions for more of these random supplies in the discord!",
     "Join the discord @ https://discord.gg/EkdeJER"]
 
-TOM_USERNAME = "thomas1672"
-KLOK_USERNAME = "klokinator"
+BOT_FIRST_COMMENT_RESPONSE = """\
+Hi. I'm a bot, bleep bloop.\n\n\n\n\
+If you want to chat with 200+ fellow Cryopod readers, \
+join the Discord at https://discord.gg/6JtsQJR\n\n\n""" + FOOTER_MESSAGE + \
+"""\
+This part consisted of: %(char_count)s" characters, %(word_count)s words, and \
+%(unique_word_count)s unique words!\n\n\
+[Previous Part] (%(prev_url)s)"""
 
 #Fetches all messages sent to the bot.
 def removel(who):
@@ -53,106 +64,6 @@ def removel(who):
 	f.truncate()
 	f.close()
 
-
-"""
-#Empty list to prevent double posts.
-fixit = []
-#For thread in the subreddit, out of the newest thread.
-for submission in subreddit.get_new(limit=1):
-	time.sleep(3)
-	#Set variables to prevent annoying the reddit api.
-	author = submission.author
-	title = str(submission.title)
-	id = str(submission.id)
-	#Same as message checking but for threads.
-	file = open('parts.txt','r+')
-	for line in file:
-		linelen = len(line)
-		newlinelen = linelen - 1
-		if line[:newlinelen] not in fixit:
-			fixit.append(line[:newlinelen])
-	#If the author is Klok and it begins with part, do this:
-	if str(author).lower() == "klokinator" and title[0:4].lower() == "part" and id not in fixit or str(author).lower() == "thomas1672" and title[0:4].lower() == "test" and id not in fixit:
-		file.write(id + "\n")
-		file.close()
-		file = open('lastpart.txt', 'r')
-		lastprt = file.readline()
-		file.close()
-		alreadyin = []
-		finished = []
-		todo = []
-		nxtparts = r.get_submission(lastprt)
-		nxtpart = nxtparts.comments[0]
-		add = nxtpart.body + "\n" + "\n" + "**[" + submission.title + "](" + submission.permalink + ")**"
-		nxtpart.edit(add)
-		prev = r.get_info(thing_id=nxtpart.parent_id)
-		prevurl = prev.permalink
-		uwc = []
-		wc = 0
-		for i in str(submission.selftext).split():
-			if i not in uwc:
-				wc += 1
-				uwc.append(i)
-		#Post the comment on the thread.
-		postedcomment = submission.add_comment("Hi. I'm a bot, bleep bloop." + "\n" + "\n" + "\n" + "\n" + "If you want to chat with 200+ fellow Cryopod readers, join the Discord at https://discord.gg/6JtsQJR" + "\n" + "\n" + "\n" + "[Click Here to be PM'd new updates!](https://np.reddit.com/message/compose/?to=CryopodBot&subject=Subscribe&message=Subscribe) " + "[Click Here to unsubscribe!](https://np.reddit.com/message/compose/?to=CryopodBot&subject=unsubscribe&message=unsubscribe)" + "\n" + "\n" + "\n" + "If you want to donate to Klokinator, send paypal gifts to Klokinator@yahoo.com, but be sure to mark it as a gift or Paypal takes 10%. " + "\n" + "\n" + "Patreon can also be pledged to [here!](https://www.patreon.com/klokinator)" + "\n" + "\n" + "This part consisted of: " + str(len(submission.selftext)) + " characters, " + str(len(str(submission.selftext).split())) + " words, and " + str(wc) + " unique words!" + "\n" + "\n" + "[" + "Previous Part" + "](" + prevurl + ")")
-		file = open('lastpart.txt', 'w')
-		file.write(str(postedcomment.permalink))
-		file.close()
-		file = open('list.txt', 'r+')
-		submission.set_flair("STORY", "story")
-		#Sticky the comment that was just posted.
-		postedcomment.distinguish(sticky=True)
-		#Get the index list's ID.
-		toedit = r.get_submission(submission_id='56tvbw')
-		time.sleep(2)
-		#Add post that was just posted to the index list.
-		tempedit = toedit.selftext
-		putin = tempedit + "\n" + "\n" + "[" + submission.title + "](" + submission.permalink + ")"
-		time.sleep(2)
-		toedit.edit(putin)
-		time.sleep(2)
-		if title[0:4].lower() != "test":
-			#Put all users in the username file into a list, then:
-			for line in file:
-				linelen = len(line)
-				newlinelen = linelen -1
-				if line[:newlinelen] not in alreadyin:
-					alreadyin.append(line[:newlinelen])
-			#For every name in the list, send them this message with the link to the part.
-			for name in alreadyin:
-				try:
-					r.send_message(name, "New Post!", "New Post on /r/TheCryopodToHell! - [" + title + "](" + submission.permalink + ")")
-					finished.append(str(name))
-				except Exception as ex:
-					print(ex)
-					print(name)
-					f = open('offenders.txt','r+')
-					f.write(name + "\n")
-					f.close()
-				time.sleep(1)
-			time.sleep(10)
-			for line in file:
-				linelen = len(line)
-				newlinelen = linelen -1
-				if line[:newlinelen] not in finished:
-					todo.append(line[:newlinelen])
-			for name in todo:
-				try:
-					r.send_message(name, "New Post!", "New Post on /r/TheCryopodToHell! - [" + title + "](" + submission.permalink + ")")
-				except Exception as ex:
-					print(ex)
-					print(name)
-					f = open('offenders.txt','r+')
-					f.write(name + "\n")
-					f.close()
-					torem = name + "\n"
-					removel(torem)
-				time.sleep(1)
-			file.close()
-	else:
-		file.close()
-
-"""
 def set_up_reddit():
     user_agent = "Alternate cryopod implementation 1.0 by /u/robrys"
     reddit = praw.Reddit(user_agent = user_agent)
@@ -261,11 +172,114 @@ def process_tagged_comments(reddit):
 
     overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
 
+def process_submissions(reddit):
+    subreddit = reddit.get_subreddit("thecryopodtohell")
+    #Empty list to prevent double posts.
+    fixit = []
+    #For thread in the subreddit, out of the newest thread.
+    for submission in subreddit.get_new(limit=1):
+        time.sleep(3)
+        #Set variables to prevent annoying the reddit api.
+        author = submission.author
+        title = unicode(submission.title)
+        id = unicode(submission.id)
+        #Same as message checking but for threads.
+        fixit = unique_file_lines(PARTS_FILE)
+
+        file = open('parts.txt','r+')
+        for line in file:
+            linelen = len(line)
+            newlinelen = linelen - 1
+            if line[:newlinelen] not in fixit:
+                fixit.append(line[:newlinelen])
+
+        #If the author is Klok and it begins with part, do this:
+        if str(author).lower() == "klokinator" and title[0:4].lower() == "part" and id not in fixit or str(author).lower() == "thomas1672" and title[0:4].lower() == "test" and id not in fixit:
+            file.write(id + "\n")
+            file.close()
+            file = open('lastpart.txt', 'r')
+            lastprt = file.readline()
+            file.close()
+            alreadyin = []
+            finished = []
+            todo = []
+            nxtparts = r.get_submission(lastprt)
+            nxtpart = nxtparts.comments[0]
+            add = nxtpart.body + "\n" + "\n" + "**[" + submission.title + "](" + submission.permalink + ")**"
+            nxtpart.edit(add)
+            prev = r.get_info(thing_id=nxtpart.parent_id)
+            prevurl = prev.permalink
+            uwc = []
+            wc = 0
+            for i in str(submission.selftext).split():
+                if i not in uwc:
+                    wc += 1
+                    uwc.append(i)
+            #Post the comment on the thread.
+            postedcomment = submission.add_comment(BOT_FIRST_COMMENT_RESPONSE)
+            file = open('lastpart.txt', 'w')
+            file.write(str(postedcomment.permalink))
+            file.close()
+            file = open('list.txt', 'r+')
+            submission.set_flair("STORY", "story")
+            #Sticky the comment that was just posted.
+            postedcomment.distinguish(sticky=True)
+            #Get the index list's ID.
+            toedit = r.get_submission(submission_id='56tvbw')
+            time.sleep(2)
+            #Add post that was just posted to the index list.
+            tempedit = toedit.selftext
+            putin = tempedit + "\n" + "\n" + "[" + submission.title + "](" + submission.permalink + ")"
+            time.sleep(2)
+            toedit.edit(putin)
+            time.sleep(2)
+            if title[0:4].lower() != "test":
+                #Put all users in the username file into a list, then:
+                for line in file:
+                    linelen = len(line)
+                    newlinelen = linelen -1
+                    if line[:newlinelen] not in alreadyin:
+                        alreadyin.append(line[:newlinelen])
+                #For every name in the list, send them this message with the link to the part.
+                for name in alreadyin:
+                    try:
+                        r.send_message(name, "New Post!", "New Post on /r/TheCryopodToHell! - [" + title + "](" + submission.permalink + ")")
+                        finished.append(str(name))
+                    except Exception as ex:
+                        print(ex)
+                        print(name)
+                        f = open('offenders.txt','r+')
+                        f.write(name + "\n")
+                        f.close()
+                    time.sleep(1)
+                time.sleep(10)
+                for line in file:
+                    linelen = len(line)
+                    newlinelen = linelen -1
+                    if line[:newlinelen] not in finished:
+                        todo.append(line[:newlinelen])
+                for name in todo:
+                    try:
+                        r.send_message(name, "New Post!", "New Post on /r/TheCryopodToHell! - [" + title + "](" + submission.permalink + ")")
+                    except Exception as ex:
+                        print(ex)
+                        print(name)
+                        f = open('offenders.txt','r+')
+                        f.write(name + "\n")
+                        f.close()
+                        torem = name + "\n"
+                        removel(torem)
+                    time.sleep(1)
+                file.close()
+
+    else:
+        file.close()
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     reddit = set_up_reddit()
 
     process_subscription_messages(reddit)
     process_tagged_comments(reddit)
-
+    #process_submissions(reddit)
 
