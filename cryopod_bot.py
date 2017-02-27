@@ -4,6 +4,8 @@ import praw
 import random
 import time
 
+import pdb
+pdb.set_trace()
 from creds import *
 from common_util import *
 
@@ -53,7 +55,7 @@ def process_tagged_comments(reddit):
     processed_message_ids = unique_file_lines(PROCESSED_MSG_IDS_FILE)
 
     for comment in subcomments:
-        print "comment:\n\t\t%s\n\n***\n\n" % comment.body
+        #print "comment:\n\t\t%s\n\n***\n\n" % comment.body
         if is_bot_tagged(comment) and \
            not is_author(BOT_USERNAME, comment) and \
            not is_processed_message_id(comment.id, processed_message_ids):
@@ -61,7 +63,7 @@ def process_tagged_comments(reddit):
                 # If it's talking about the post, comment the post.
                 if is_post_about("post", comment):
                     print unicode(comment.id)
-                    print BOST_POST_COMMENT_RESPONSE
+                    print BOT_POST_COMMENT_RESPONSE
                     #comment.reply(BOT_POST_COMMENT_RESPONSE)
                     processed_message_ids.add(unicode(comment.id))
 
@@ -98,50 +100,38 @@ def process_tagged_comments(reddit):
     #       like .reply() or.set_flair()
     overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
 
-def post_bot_first_comment(submission):
-    bot_comment = format_bot_first_comment(submission)
-    posted_bot_comment = submission.add_comment(bot_first_comment)
-    posted_bot_comment.distinguish(sticky=True)
-    submission.set_flair("STORY", "story")
-    return posted_bot_comment
-
+#Set variables to prevent annoying the reddit api.
+# does every access of a .field hit the api?
+# i thought lazy objects means only the first access does
+# since those fields are immutable???
 def process_submissions(reddit):
     subreddit = reddit.get_subreddit("thecryopodtohell")
+    webseries_parts_ids = unique_file_lines(ALL_WEBSERIES_PART_IDS_FILE)
+
     #For thread in the subreddit, out of the newest thread.
-    for submission in subreddit.get_new(limit=1):
-        time.sleep(3)
-        #Set variables to prevent annoying the reddit api.
-        # does every access of a .field hit the api?
-        # i thought lazy objects means only the first access does
-        # since those fields are immutable???
+    for submission in subreddit.get_new(limit=5):
+        #time.sleep(3)
 
-        # Same as message checking but for threads.
-        # Empty list to prevent double posts.
-        webseries_parts = unique_file_lines(ALL_WEBSERIES_PARTS_FILE)
+        #print "submission:\n\t\t%s\n\n***\n\n" % submission.title
+        #print "submission:\n\t\t%s\n\n***\n\n" % submission.selftext
 
-        #If the author is Klok and it begins with part, do this:
         if (is_author(KLOK_USERNAME, submission) and \
             is_webseries_part(submission) and \
-            not is_processed_webseries_part(submission.id, webseries_parts)) or \
+            not is_processed_webseries_part(submission.id, webseries_parts_ids)) or \
            (is_author(TOM_USERNAME, submission) and \
             is_test_webseries_part(submission) and \
-            not is_processed_webseries_part(submission.id, webseries_parts)):
-                # move this after all work is done? in case fails
-                webseries_parts.add(unicode(submission.id))
-                overwrite_file(ALL_WEBSERIES_PARTS_FILE, "\n".join(webseries_parts))
+            not is_processed_webseries_part(submission.id, webseries_parts_ids)):
 
-                link_previous_part_to_latest(submission)
+                webseries_parts_ids.add(unicode(submission.id))
+                overwrite_file(ALL_WEBSERIES_PART_IDS_FILE,
+                               "\n".join(webseries_parts_ids))
 
-                #Post the comment on the thread.
-                posted_bot_comment = post_bot_first_comment(submission)
-
-                newest_webseries_part_url = unicode(posted_bot_comment.permalink)
-                overwrite_file(LATEST_WEBSERIES_PART_FILE, newest_webseries_part_url)
-
-                link_index_list_to_latest(submission)
-
-# lastpart.txt is actually a link to the bot's stickied comment!!
-# need to update docs
+                link_previous_part_to_latest(reddit, submission)
+                posted_bot_comment = post_bot_first_comment(reddit, submission)
+                #overwrite_file(LATEST_BOT_STICKY_COMMENT_FILE,
+                               #unicode(posted_bot_comment.permalink))
+                #submission.set_flair("STORY", "story")
+                link_index_list_to_latest(reddit, submission)
 
                 if not is_test_webseries_part(submission):
                     notify_subscribed_users(submission)
@@ -150,7 +140,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     reddit = set_up_reddit()
 
-    process_subscription_messages(reddit)
-    process_tagged_comments(reddit)
-    #process_submissions(reddit)
+    #process_subscription_messages(reddit)
+    #process_tagged_comments(reddit)
+    process_submissions(reddit)
 

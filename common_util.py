@@ -1,11 +1,13 @@
+import time
+
 #!/usr/bin/python
 BOT_USERNAME = "cryopodbot"
 TOM_USERNAME = "thomas1672"
 KLOK_USERNAME = "klokinator"
 SUBSCRIBED_USERS_FILE = "subscribed_users.txt"
 PROCESSED_MSG_IDS_FILE = "processed_message_ids.txt"
-ALL_WEBSERIES_PARTS_FILE = "parts.txt"
-LATEST_WEBSERIES_PART_FILE = "lastpart.txt"
+ALL_WEBSERIES_PART_IDS_FILE = "parts.txt"
+LATEST_BOT_STICKY_COMMENT_FILE = "lastpart.txt"
 INDEX_LIST_POST_ID = "56tvbw"
 
 MESSAGE_BOT_LINK = "https://np.reddit.com/message/compose/?to=CryopodBot"
@@ -17,7 +19,7 @@ FOOTER_MESSAGE = """\
 [Click Here to be PM'd new updates!] (%(sub_link)s)\
 [Click Here to unsubscribe!] (%(unsub_link)s)\n\n\n\
 If you want to donate to Klokinator, send paypal gifts to %(paypal_email)s, \
-but be sure to mark it as a gift or Paypal takes 10%%.\n\n\
+but be sure to mark it as a gift or Paypal takes 10 percent.\n\n\
 Patreon can also be pledged to [here!] (%(patreon_link)s)\n\n\
 """ % dict(sub_link=SUBSCRIBE_LINK, unsub_link=UNSUBSCRIBE_LINK,
            paypal_email=PAYPAL_EMAIL, patreon_link=PATREON_LINK)
@@ -47,7 +49,7 @@ Hi. I'm a bot, bleep bloop.\n\n\n\n\
 If you want to chat with 200+ fellow Cryopod readers, \
 join the Discord at https://discord.gg/6JtsQJR\n\n\n""" + FOOTER_MESSAGE + \
 """\
-This part consisted of: %(char_count)s" characters, %(word_count)s words, and \
+This part consisted of: %(char_count)s characters, %(word_count)s words, and \
 %(unique_word_count)s unique words!\n\n\
 [Previous Part] (%(prev_url)s)"""
 
@@ -88,38 +90,40 @@ def is_author(username, comment):
     return unicode(comment.author).lower() == username
 
 def is_webseries_part(submission):
-    return unicode(submission.title).lower() == "part"
+    return unicode(submission.title).lower()[0:4] == "part"
 
 def is_test_webseries_part(submission):
-    return unicode(submission.title).lower() == "test"
+    return unicode(submission.title).lower()[0:4] == "test"
 
 def is_processed_webseries_part(submission_id, processed_parts):
     return unicode(submission_id) in processed_parts
 
-def get_latest_webseries_part_url():
-    most_recent_part_file = open(LATEST_WEBSERIES_PART_FILE, "r")
-    most_recent_part = most_recent_part_file.readline()
-    most_recent_part_file.close()
-    return most_recent_part
+def get_latest_bot_sticky_comment_url():
+    sticky_url_file = open(LATEST_BOT_STICKY_COMMENT_FILE, "r")
+    sticky_url = sticky_url_file.readline()
+    sticky_url_file.close()
+    return sticky_url
 
-def link_previous_part_to_latest(submission):
+def link_previous_part_to_latest(reddit, submission):
     # update previous webseries part's bot comment to link to this
-    previous_webseries_part_url = get_latest_webseries_part_url()
-    previous_webseries_part = reddit.get_submission(latest_webseries_part_url)
+    latest_sticky_url = get_latest_bot_sticky_comment_url()
+    latest_sticky_comment_obj = reddit.get_submission(latest_sticky_url)
 
     # this is a risky assumption if somebody ever beats the bot
-    previous_first_comment = previous_webseries_part.comments[0]
-    updated_comment = previous_first_comment.body + "\n\n" + \
+    latest_sticky_comment = latest_sticky_comment_obj.comments[0]
+    updated_comment = latest_sticky_comment.body + "\n\n" + \
                       "**[" + submission.title + "]" + \
                       "(" + submission.permalink + ")**"
-    previous_first_comment.edit(updated_comment)
+    print "woudlve edited:\n\n\t%s" % updated_comment
+    #latest_sticky_comment_obj.edit(updated_comment)
 
-def format_bot_first_comment(submission):
-    # get permalink to previous part
-    # is this just the same as the url stored in the file?
-    previous_webseries_part_url = get_latest_webseries_part_url()
-    previous_webseries_part = reddit.get_submission(latest_webseries_part_url)
-    previous_webseries_part_permalink = previous_webseries_part.permalink
+def format_bot_first_comment(reddit, submission):
+    latest_sticky_url = get_latest_bot_sticky_comment_url()
+    latest_sticky_comment_obj = reddit.get_submission(latest_sticky_url)
+
+    latest_part_id = latest_sticky_comment_obj.comments[0].parent_id
+    latest_part = reddit.get_info(thing_id=latest_part_id)
+    latest_part_url = latest_part.permalink
 
     submission_words = unicode(submission.selftext).split()
     char_count = len(submission.selftext)
@@ -130,24 +134,32 @@ def format_bot_first_comment(submission):
                             char_count=char_count,
                             word_count=word_count,
                             unique_word_count=unique_word_count,
-                            prev_url=previous_webseries_part_permalink)
+                            prev_url=latest_part_url)
     return bot_first_comment
 
-def link_index_list_to_latest(submission):
+def post_bot_first_comment(reddit, submission):
+    bot_comment = format_bot_first_comment(reddit, submission)
+    print "would've posted\n\n\t%s" % unicode(bot_comment)
+    #posted_bot_comment = submission.add_comment(bot_first_comment)
+    #posted_bot_comment.distinguish(sticky=True)
+    #return posted_bot_comment
+    return bot_comment
+
+def link_index_list_to_latest(reddit, submission):
     #Get the index list's ID.
     index_list_post = reddit.get_submission(submission_id=INDEX_LIST_POST_ID)
     time.sleep(2)
 
     #Add post that was just posted to the index list.
-    updated_index_list_post = index_list_post.body + "\n\n" + \
-                              "**[" + submission.title + "]" + \
-                              "(" + submission.permalink + ")**"
+    updated_index_list_post = index_list_post.selftext + "\n\n" + \
+                              "[" + submission.title + "]" + \
+                              "(" + submission.permalink + ")"
     time.sleep(2)
-    index_list_post.edit(updated_index_list_post)
+    print "would've edited\n\n\t%s" % unicode(updated_index_list_post).encode("ascii", "ignore")
+    #index_list_post.edit(updated_index_list_post)
     time.sleep(2)
 
 def record_user_as_offender(username):
-    print(ex)
     print(username)
     offenders_file = open(OFFENDERS_FILE, "r+")
     offenders_file.write(username + "\n")
@@ -157,7 +169,6 @@ def notify_subscribed_users(submission):
     #Put all users in the username file into a list, then:
     subscribed_users = unique_file_lines(SUBSCRIBED_USERS_FILE)
     notified_users = []
-    todo = []
 
     new_post_message = NEW_POST_MESSAGE % dict(\
                         title=submission.title,
@@ -166,9 +177,11 @@ def notify_subscribed_users(submission):
     #For every name in the list, send them this message with the link to the part.
     for subscribed_user in subscribed_users:
         try:
-            reddit.send_message(subscribed_user, "New Post!", new_post_message)
+            print "would've sent message\n\n\t%s" % unicode(new_post_message)
+            #reddit.send_message(subscribed_user, "New Post!", new_post_message)
             notified_users.append(unicode(subscribed_user))
         except Exception as ex:
+            print(ex)
             record_user_as_offender(subscribed_user)
         time.sleep(1)
     time.sleep(10)
@@ -177,9 +190,13 @@ def notify_subscribed_users(submission):
     failed_users = [user for user in subscribed_users if user not in notified_users]
     for failed_user in failed_users:
         try:
-            reddit.send_message(subscribed_user, "New Post!", new_post_message)
+            print "would've sent message\n\n\t%s" % unicode(new_post_message)
+            #reddit.send_message(subscribed_user, "New Post!", new_post_message)
         except Exception as ex:
+            print(ex)
             record_user_as_offender(failed_user)
             subscribed_users.remove(failed_user)
             ovewrite_file(SUBSCRIBED_USERS_FILE, "\n".join(subscribed_users))
         time.sleep(1)
+
+
