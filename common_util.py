@@ -124,7 +124,7 @@ def link_previous_part_to_latest(reddit, submission):
                       "**[" + submission.title + "]" + \
                       "(" + submission.permalink + ")**"
 
-    #latest_sticky_comment_obj.edit(updated_comment)
+    latest_sticky_comment_obj.edit(updated_comment)
 
 def format_bot_first_comment(reddit, submission):
     latest_sticky_url = get_latest_bot_sticky_comment_url()
@@ -148,11 +148,9 @@ def format_bot_first_comment(reddit, submission):
 
 def post_bot_first_comment(reddit, submission):
     bot_comment = format_bot_first_comment(reddit, submission)
-    #posted_bot_comment = submission.add_comment(bot_first_comment)
-    #posted_bot_comment.distinguish(sticky=True)
-
-    #return posted_bot_comment
-    return bot_comment
+    posted_bot_comment = submission.add_comment(bot_first_comment)
+    posted_bot_comment.distinguish(sticky=True)
+    return posted_bot_comment
 
 def link_index_list_to_latest(reddit, submission):
     #Get the index list's ID.
@@ -165,7 +163,7 @@ def link_index_list_to_latest(reddit, submission):
                               "(" + submission.permalink + ")"
     time.sleep(2)
 
-    #index_list_post.edit(updated_index_list_post)
+    index_list_post.edit(updated_index_list_post)
     time.sleep(2)
 
 def record_user_as_offender(username):
@@ -186,7 +184,7 @@ def notify_subscribed_users(submission):
     #For every name in the list, send them this message with the link to the part.
     for subscribed_user in subscribed_users:
         try:
-            #reddit.send_message(subscribed_user, "New Post!", new_post_message)
+            reddit.send_message(subscribed_user, "New Post!", new_post_message)
             notified_users.append(subscribed_user)
         except Exception as ex:
             print(ex)
@@ -199,7 +197,7 @@ def notify_subscribed_users(submission):
     for failed_user in failed_users:
         try:
             print placeholder
-            #reddit.send_message(subscribed_user, "New Post!", new_post_message)
+            reddit.send_message(subscribed_user, "New Post!", new_post_message)
         except Exception as ex:
             print(ex)
             record_user_as_offender(failed_user)

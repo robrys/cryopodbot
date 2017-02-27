@@ -33,7 +33,7 @@ def process_subscription_messages(reddit):
                 try:
                     subscribed_users.remove(author)
                     overwrite_file(SUBSCRIBED_USERS_FILE, "\n".join(subscribed_users))
-                    #message.reply("BOT: You've been unsubscribed!")
+                    message.reply("BOT: You've been unsubscribed!")
                     processed_ids.add(message_id)
                     overwrite_file(PROCESSED_IDS_FILE, "\n".join(processed_ids))
                 except Exception as e:
@@ -48,7 +48,7 @@ def process_subscription_messages(reddit):
                 try:
                     subscribed_users.add(author)
                     overwrite_file(SUBSCRIBED_USERS_FILE, "\n".join(subscribed_users))
-                    #message.reply("BOT: Thanks, you've been added to the list!")
+                    message.reply("BOT: Thanks, you've been added to the list!")
                     processed_ids.add(message_id)
                     overwrite_file(PROCESSED_IDS_FILE, "\n".join(processed_ids))
                 except Exception as e:
@@ -69,7 +69,6 @@ def process_tagged_comments(reddit):
     processed_ids = unique_file_lines(PROCESSED_IDS_FILE)
 
     for comment in subcomments:
-        #print "comment:\n\t\t%s\n\n***\n\n" % comment.body
         if is_bot_tagged(comment) and \
            not is_author(BOT_USERNAME, comment) and \
            not is_processed_id(comment.id, processed_ids):
@@ -79,7 +78,7 @@ def process_tagged_comments(reddit):
 
                 # If it's talking about the post, comment the post.
                 if is_post_about("post", comment):
-                    #comment.reply(BOT_POST_COMMENT_RESPONSE)
+                    comment.reply(BOT_POST_COMMENT_RESPONSE)
                     print "placeholder"
 
                 #If the post wants a flair and it's me or Klok:
@@ -88,7 +87,7 @@ def process_tagged_comments(reddit):
                       is_author(KLOK_USERNAME, comment)):
                         #Flair and stop duplicate flairing (would only waste processor time)
                         flairsubmtoset = reddit.get_submission(submission_id=submission_id)
-                        #flairsubmtoset.set_flair("INFO", "info")
+                        flairsubmtoset.set_flair("INFO", "info")
 
                 elif is_post_about("flair question", comment) and \
                      (is_author(TOM_USERNAME, comment) or \
@@ -98,7 +97,7 @@ def process_tagged_comments(reddit):
                 # Every other comment tagging the bot, just say some message
                 else:
                     response = random.choice(BOT_TAGGED_RESPONSES)
-                    #comment.reply(response)
+                    comment.reply(response)
 
                 # mark the comment processed and write the file to disk
                 processed_ids.add(comment_id)
@@ -128,7 +127,7 @@ def process_submissions(reddit):
                 posted_bot_comment = post_bot_first_comment(reddit, submission)
                 posted_bot_comment = unicode(posted_bot_comment).encode("ascii", "ignore")
                 overwrite_file(LATEST_BOT_STICKY_COMMENT_FILE, posted_bot_comment)
-                #submission.set_flair("STORY", "story")
+                submission.set_flair("STORY", "story")
 
                 link_index_list_to_latest(reddit, submission)
 
