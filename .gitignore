@@ -1,2 +1,3 @@
 praw.ini
 .*.swp
+creds.py

@@ -1,32 +1,14 @@
 #!/usr/bin/python
-import sys
 import logging
-import discord
-import asyncio
 import praw
-import pdb
-import re
 import random
 import time
-#Imports all passwords from a hidden file ;)
-from pw_bot import *
-logging.basicConfig(level=logging.INFO)
-user_agent = ("CryoBot 1.0")
-#Starts the main section of the reddit bot and assigns it to r.
-r = praw.Reddit(user_agent = user_agent)
-#Connects to the TCTH sub.
-subreddit = r.get_subreddit("thecryopodtohell")
-#Logs into Bot's Account from hidden file above.
-r.login(REDDIT_USERNAME, REDDIT_PASS)
-#for submission in subreddit.get_new(limit = 1):
-#	author = submission.author
-#	print(author)
-#	time.sleep(5)
-#	if str(author).lower() == "klokinator":
-#		print("TEST!")
-#		time.sleep(5)
-		#if str(submission.title)[0:4].lower() == "part"
 
+#Imports all passwords from a hidden file ;)
+from creds import *
+
+SUBSCRIPTION_FILE = "subscribed_users.txt"
+PROCESSED_MSG_IDS_FILE = "processed_message_ids.txt"
 BOT_TAGGED_RESPONSES = [\
 "You called? ;,", "What's up?", "Hey!", "Yo, 'sup?",
 "Go check out my discord at https://github.com/TGWaffles/cryopodbot",
@@ -47,58 +29,10 @@ def removel(who):
 			f.write(i)
 	f.truncate()
 	f.close()
-messages = r.get_messages()
-already_done = []
-alreadyin = []
-#For every message in the messages you just fetched:
-for message in messages:
-	print("Opening message!")
-	#Open the username list
-	file = open('list.txt', 'r+')
-	#Add names from a username to a list and post ids to another.
-	for line in file:
-		linelen = len(line)
-		newlinelen = linelen - 1
-		if line[:newlinelen] not in alreadyin:
-			alreadyin.append(line[:newlinelen])
-	otherfile = open('done.txt', 'r+')
-	for i in range(2):
-		for line in otherfile:
-			linelen = len(line)
-			newlinelen = linelen - 1
-			if line[:newlinelen] not in already_done:
-				already_done.append(line[:newlinelen])
-	#If the message talks about subscription, and if the author hasn't already been added and the id isn't done:
-	if "unsubscribe" in str(message.body).lower() and str(message.author) in alreadyin and str(message.id) not in already_done:
-		message.reply("BOT: You've been unsubscribed!")
-		f = open("list.txt","r+")
-		d = f.readlines()
-		f.seek(0)
-		for i in d:
-			if str(message.author) not in i:
-		                f.write(i)
-		f.truncate()
-		f.close()
-		already_done.append(message.id)
-		otherfile.write(str(message.id) + "\n")
-	elif "subscribe" in str(message.body).lower() and str(message.author) not in alreadyin and str(message.id) not in already_done:
-		print("Adding someone! - " + str(message.author))
-		#Double check to attempt to double-post proof.
-		if str(message.author) not in alreadyin:
-			#Write the sender's name in the username list.
-			#Tells the sender they've been added.
-			try:
-				file.write(str(message.author) + "\n")
-				message.reply("BOT: Thanks, you've been added to the list!")
-			except Exception as e:
-				print(e)
-			time.sleep(2)
-			#Adds their name to the ID list and stuff.
-			alreadyin.append(message.author)
-			already_done.append(message.id)
-			otherfile.write(str(message.id) + "\n")
-	otherfile.close()
-	file.close()
+
+
+
+
 #Empty list to prevent double posts.
 fixit = []
 #For thread in the subreddit, out of the newest thread.
@@ -237,3 +171,71 @@ for comment in subcomments:
 			otherfile.write(str(comment.id) + "\n")
 #Re-Save the file.
 otherfile.close()
+
+
+def set_up_reddit():
+    user_agent = "Alternate cryopod implementation 1.0 by /u/robrys"
+    reddit = praw.Reddit(user_agent = user_agent)
+    reddit.login(REDDIT_USERNAME, REDDIT_PASS)
+    return reddit
+
+def unique_file_lines(file_name):
+    unique_contents = set()
+    file_handle = open(file_name, "r")
+    for line in file_handle:
+        unique_contents.add(line.strip())
+    file_handle.close()
+    return unique_contents
+
+def is_unsubscribe_request(message):
+    return "unsubscribe" in str(message.body).lower()
+
+def is_subscribe_request(message):
+    return "subscribe" in str(message.body).lower()
+
+def is_subscribed(message.author, subscribed_users):
+    return str(message.author) in subscribed_users
+
+def is_processed_message_id(message_id, processed_message_ids):
+    return str(message_id) in processed_message_ids
+
+def overwrite_file(file_name, file_contents):
+    file_handle = open(file_name, "w")
+    file_handle.write(file_contents)
+    file_handle.close()
+
+def handle_subscription_messages(reddit):
+    messages = reddit.get_messages()
+    subscribed_users = unique_file_lines(SUBSCRIPTION_FILE)
+    processed_message_ids = unique_file_lines(PROCESSED_MSG_IDS_FILE)
+
+    for message in messages:
+        print "Opening message!"
+        if is_processed_message_id(message.id, processed_message_ids):
+            continue
+
+        # note: message ids that are neither subscribe/unsubscribe
+        #       are not added to the processed message id file
+        if is_unsubscribe_request(message) and
+           is_subscribed(message.author, subscribed_users):
+                subscribed_users.remove(str(message.author))
+                processed_message_ids.add(str(message.id))
+                message.reply("BOT: You've been unsubscribed!")
+
+        elif is_subscribe_request(message) and
+             not is_subscribed(message.author, subscribed_users):
+                print "Adding someone! - " + str(message.author)
+                subscribed_users.add(str(message.author))
+                processed_message_ids.add(str(message.id))
+
+    overwrite_file(SUBSCRIPTION_FILE, "\n".join(subscribed_users))
+    overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_msg_ids))
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    reddit = set_up_reddit()
+
+    handle_subscription_messages(reddit)
+
+
+
