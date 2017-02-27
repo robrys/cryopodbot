@@ -4,20 +4,43 @@ import praw
 import random
 import time
 
-#Imports all passwords from a hidden file ;)
 from creds import *
 
 SUBSCRIPTION_FILE = "subscribed_users.txt"
 PROCESSED_MSG_IDS_FILE = "processed_message_ids.txt"
+
+MESSAGE_BOT_LINK = "https://np.reddit.com/message/compose/?to=CryopodBot"
+SUBSCRIBE_LINK = MESSAGE_BOT_LINK + "&subject=Subscribe&message=Subscribe"
+UNSUBSCRIBE_LINK = MESSAGE_BOT_LINK + "&subject=unsubscribe&message=unsubscribe"
+PAYPAL_EMAIL = "Klokinator@yahoo.com"
+PATREON_LINK = "https://www.patreon.com/klokinator"
+BOT_POST_COMMENT_RESPONSE = """\
+Hi. I'm a bot, bleep bloop.\n\n\
+If you're about to post regarding a typo and this Part was just posted, \
+please wait ten minutes, refresh, and then see if it's still there!\n\n\
+Also, if you want to report typos anywhere, please respond to this bot to \
+keep the main post clutter free. Thank you!\n\n\n\
+[Click Here to be PM'd new updates!] (%(sub_link)s)\
+[Click Here to unsubscribe!] (%(unsub_link)s)\n\n\n\
+If you want to donate to Klokinator, send paypal gifts to %(paypal_email)s, \
+but be sure to mark it as a gift or Paypal takes 10%%.\n\n\
+Patreon can also be pledged to [here!] (%(patreon_link)s)\
+""" % dict(sub_link=SUBSCRIBE_LINK, unsub_link=UNSUBSCRIBE_LINK,
+           paypal_email=PAYPAL_EMAIL, patreon_link=PATREON_LINK)
+BOT_USERNAME = "cryopodbot"
+
 BOT_TAGGED_RESPONSES = [\
-"You called? ;,", "What's up?", "Hey!", "Yo, 'sup?",
-"Go check out my discord at https://github.com/TGWaffles/cryopodbot",
-"Tagging me in a post can trigger specific things. " + \
-"One of the random replies means I didn't understand what you asked!",
-"Go check out Klok's patreon [here!](https://www.patreon.com/klokinator,",
-"I was coded by /u/thomas1672 - direct all questions to him!",
-"Now taking suggestions for more of these random supplies in the discord!",
-"Join the discord @ https://discord.gg/EkdeJER"]
+    "You called? ;,", "What's up?", "Hey!", "Yo, 'sup?",
+    "Go check out my discord at https://github.com/TGWaffles/cryopodbot",
+    "Tagging me in a post can trigger specific things. " + \
+    "One of the random replies means I didn't understand what you asked!",
+    "Go check out Klok's patreon [here!] (" + PATREON_LINK + ")",
+    "I was coded by /u/thomas1672 - direct all questions to him!",
+    "Now taking suggestions for more of these random supplies in the discord!",
+    "Join the discord @ https://discord.gg/EkdeJER"]
+
+TOM_USERNAME = "thomas1672"
+KLOK_USERNAME = "klokinator"
 
 #Fetches all messages sent to the bot.
 def removel(who):
@@ -31,8 +54,7 @@ def removel(who):
 	f.close()
 
 
-
-
+"""
 #Empty list to prevent double posts.
 fixit = []
 #For thread in the subreddit, out of the newest thread.
@@ -129,54 +151,12 @@ for submission in subreddit.get_new(limit=1):
 			file.close()
 	else:
 		file.close()
-#Gets all comments in the subreddit, then flattens them.
-subreddit_comments = subreddit.get_comments()
-subcomments = praw.helpers.flatten_tree(subreddit_comments)
-#Loops through every comment in the sub.
-for comment in subcomments:
-	#Opens file with comment ids.
-	otherfile = open('done.txt','r+')
-	#Do it twice to make sure.
-	for i in range(2):
-		for line in otherfile:
-			linelen = len(line)
-			newlinelen = linelen - 1
-			if line[:newlinelen] not in already_done:
-				already_done.append(line[:newlinelen])
-	#If someone's tagging us and we've not processed their comment:
-	if "/u/cryopodbot" in str(comment.body).lower() and str(comment.id) not in already_done:
-		#If it's talking about the post, comment the post.
-		if "post" in str(comment.body).lower():
-			#Make sure the bot doesn't respond to itself.
-			if str(comment.author).lower() != "cryopodbot":
-				#Reply!
-				comment.reply("Hi. I'm a bot, bleep bloop." + "\n" + "\n" + "If you're about to post regarding a typo and this Part was just posted, please wait ten minutes, refresh, and then see if it's still there!" + "\n" + "\n" + "Also, if you want to report typos anywhere, please respond to this bot to keep the main post clutter free. Thank you!" + "\n" + "\n" + "\n" + "[Click Here to be PM'd new updates!](https://np.reddit.com/message/compose/?to=CryopodBot&subject=Subscribe&message=Subscribe) " + "[Click Here to unsubscribe!](https://np.reddit.com/message/compose/?to=CryopodBot&subject=unsubscribe&message=unsubscribe)" + "\n" + "\n" + "\n" + "If you want to donate to Klokinator, send paypal gifts to Klokinator@yahoo.com, but be sure to mark it as a gift or Paypal takes 10%. " + "\n" + "\n" + "Patreon can also be pledged to [here!](https://www.patreon.com/klokinator)")
-				#Post the ID to a file to prevent duplicates.
-				otherfile.write(str(comment.id) + "\n")
-		#If the post wants a flair and it's me or Klok:
-		elif "flair info" in str(comment.body).lower():
-			if str(comment.author).lower() == "thomas1672" or str(comment.author).lower() == "klokinator":
-				flairsubmtoset = r.get_submission(submission_id=str(comment.parent_id)[-6:])
-				#Flair and stop duplicate flairing (would only waste processor time)
-				flairsubmtoset.set_flair("INFO", "info")
-				otherfile.write(str(comment.id) + "\n")
-		elif "flair question" in str(comment.body).lower():
-			if str(comment.author).lower() == "thomas1672" or str(comment.author).lower() == "klokinator":
-				flairsubmtoset = r.get_submission(submission_id=str(comment.parent_id)[-6:])
-				flairsubmtoset.set_flair("QUESTION", "question")
-				otherfile.write(str(comment.id) + "\n")
-		elif str(comment.author).lower() != "cryopodbot":
-                        response = random.choice(BOT_TAGGED_RESPONSES)
-                        comment.reply(response)
-			otherfile.write(str(comment.id) + "\n")
-#Re-Save the file.
-otherfile.close()
 
-
+"""
 def set_up_reddit():
     user_agent = "Alternate cryopod implementation 1.0 by /u/robrys"
     reddit = praw.Reddit(user_agent = user_agent)
-    reddit.login(REDDIT_USERNAME, REDDIT_PASS)
+    reddit.login(REDDIT_USERNAME, REDDIT_PASSWORD, disable_warning=True)
     return reddit
 
 def unique_file_lines(file_name):
@@ -188,23 +168,23 @@ def unique_file_lines(file_name):
     return unique_contents
 
 def is_unsubscribe_request(message):
-    return "unsubscribe" in str(message.body).lower()
+    return "unsubscribe" in message.body.lower().encode("utf-8")
 
 def is_subscribe_request(message):
-    return "subscribe" in str(message.body).lower()
+    return "subscribe" in message.body.lower().encode("utf-8")
 
-def is_subscribed(message.author, subscribed_users):
-    return str(message.author) in subscribed_users
+def is_subscribed(message_author, subscribed_users):
+    return message_author.lower().encode("utf-8").strip() in subscribed_users
 
 def is_processed_message_id(message_id, processed_message_ids):
-    return str(message_id) in processed_message_ids
+    return message_id.encode("utf-8").strip() in processed_message_ids
 
 def overwrite_file(file_name, file_contents):
     file_handle = open(file_name, "w")
     file_handle.write(file_contents)
     file_handle.close()
 
-def handle_subscription_messages(reddit):
+def process_subscription_messages(reddit):
     messages = reddit.get_messages()
     subscribed_users = unique_file_lines(SUBSCRIPTION_FILE)
     processed_message_ids = unique_file_lines(PROCESSED_MSG_IDS_FILE)
@@ -216,26 +196,79 @@ def handle_subscription_messages(reddit):
 
         # note: message ids that are neither subscribe/unsubscribe
         #       are not added to the processed message id file
-        if is_unsubscribe_request(message) and
+        if is_unsubscribe_request(message) and \
            is_subscribed(message.author, subscribed_users):
                 subscribed_users.remove(str(message.author))
                 processed_message_ids.add(str(message.id))
                 message.reply("BOT: You've been unsubscribed!")
 
-        elif is_subscribe_request(message) and
+        elif is_subscribe_request(message) and \
              not is_subscribed(message.author, subscribed_users):
                 print "Adding someone! - " + str(message.author)
                 subscribed_users.add(str(message.author))
                 processed_message_ids.add(str(message.id))
 
     overwrite_file(SUBSCRIPTION_FILE, "\n".join(subscribed_users))
-    overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_msg_ids))
+    overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
+
+def is_bot_tagged(comment):
+    return "/u/cryopodbot" in comment.body.lower().encode("utf-8").strip()
+
+def is_post_about(keyword, comment):
+    return keyword in comment.body.lower().encode("utf-8")
+
+def is_author(username, comment):
+    return comment.author.lower().encode("utf-8") == username
+
+def process_tagged_comments(reddit):
+    subreddit = reddit.get_subreddit("thecryopodtohell")
+    subreddit_comments = subreddit.get_comments()
+    subcomments = praw.helpers.flatten_tree(subreddit_comments)
+    processed_message_ids = unique_file_lines(PROCESSED_MSG_IDS_FILE)
+
+    # Loops through every comment in the sub.
+    for comment in subcomments:
+        if is_bot_tagged(comment) and \
+           not is_processed_message_id(comment.id, processed_message_ids):
+
+                # Make sure the bot doesn't respond to itself.
+                if is_author(BOT_USERNAME, comment):
+                    continue
+
+                # If it's talking about the post, comment the post.
+                if is_post_about("post", comment):
+                    comment.reply(BOT_POST_COMMENT_RESPONSE)
+                    processed_message_ids.add(str(comment.id))
+
+                #If the post wants a flair and it's me or Klok:
+                elif is_post_about("flair info", comment):
+                    if is_author(TOM_USERNAME, comment) or \
+                       is_author(KLOK_USERNAME, comment):
+                            #Flair and stop duplicate flairing (would only waste processor time)
+                            flairsubmtoset = reddit.get_submission(submission_id=str(comment.parent_id)[-6:])
+                            flairsubmtoset.set_flair("INFO", "info")
+                            processed_message_ids.add(str(comment.id))
+
+                elif is_post_about("flair question", comment):
+                    if is_author(TOM_USERNAME, comment) or \
+                       is_author(KLOK_USERNAME, comment):
+                            flairsubmtoset = reddit.get_submission(submission_id=str(comment.parent_id)[-6:])
+                            flairsubmtoset.set_flair("QUESTION", "question")
+                            processed_message_ids.add(str(comment.id))
+
+                # Every other comment tagging the bot, just say some message
+                else:
+                    response = random.choice(BOT_TAGGED_RESPONSES)
+                    comment.reply(response)
+                    processed_message_ids.add(str(comment.id))
+
+    overwrite_file(PROCESSED_MSG_IDS_FILE, "\n".join(processed_message_ids))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     reddit = set_up_reddit()
 
-    handle_subscription_messages(reddit)
-
+    process_subscription_messages(reddit)
+    process_tagged_comments(reddit)
 
 
